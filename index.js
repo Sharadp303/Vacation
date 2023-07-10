@@ -30,18 +30,30 @@ app.get("/oauth2callback", async (req, res) => {
   const { code } = req.query;
 
   try {
-    const { tokens } = await oAuth2Client.getToken(code);
+    
+	const { tokens } = await oAuth2Client.getToken(code);
     oAuth2Client.setCredentials(tokens);
     console.log("Authenticated to Gmail");
 
-    await checkAndReplyTOEmails();
-
+    setInterval(function (){
+	 checkAndReplyTOEmails()}
+	//Check for unread Messages in INBOX
+	//Check whether the thread is already replied or not
+	//IF NOT,Reply the thread and  Create Label for it
+	,getIntervalTime())
 	res.json({ message: "ENJOY YOUR VACATION" });
+	
+
   } catch (err) {
     console.log("Authentication Error", err);
     res.status(500).json({ error: "Google Authenticaction Failed" });
   }
 });
+
+// For Random Interval between 45 to 120 seconds
+function getIntervalTime(){
+	return Math.floor(Math.random() * (120000 - 45000) + 45000)
+   }
 
 async function checkAndReplyTOEmails() {
 	// Set up Gmail API
@@ -53,7 +65,7 @@ async function checkAndReplyTOEmails() {
   // Getting Email adress of the Client
   const youremail = data.emailAddress;
 
-  setInterval(async () => {
+
 	try {
 		//Checking Unread messages in INBOX
 		const response = await gmail.users.messages.list({
@@ -73,6 +85,7 @@ async function checkAndReplyTOEmails() {
 	
 		  const firstMessage = threadMessages.data.messages[0];
 		  const headers = firstMessage.payload.headers;
+		  
 		  const isReplied = headers.some(
 			(header) => header.name === "From" && header.value.includes(youremail)
 		  );
@@ -148,15 +161,12 @@ async function checkAndReplyTOEmails() {
 	  } catch (err) {
 		console.log(err);
 	  }
-  },getIntervalTime())
+  
   
 }
 
-// For Randon Interval between 45 to 120 seconds
-function getIntervalTime(){
- return Math.floor(Math.random() * (120000 - 45000) + 45000)
-}
 
-app.listen(3000, () => {
-  console.log("http://localhost:3000");
+
+app.listen(process.env.PORT||3000, () => {
+  console.log(`http://localhost:${process.env.PORT}`);
 });
